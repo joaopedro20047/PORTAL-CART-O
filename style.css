@@ -1,0 +1,60 @@
+body {
+    background-color: #0f172a;
+    color: white;
+}
+
+.card {
+    background-color: #1e293b;
+    border-radius: 1rem;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.btn-danger {
+    background-color: #ef4444;
+    border-color: #ef4444;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+/* Centraliza os botões de escolha de credencial */
+#tipo-credencial {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px auto;
+}
+
+/* Fonte branca geral para títulos, labels, botões etc */
+body, h1, h2, h3, h4, h5, h6, label, .form-label, .form-check-label, .card, .btn {
+    color: white !important;
+}
+
+/* Placeholder cinza claro */
+input::placeholder, textarea::placeholder {
+    color: #ccc !important;
+}
+
+/* Texto digitado nos campos deve ser preto */
+input, textarea, select {
+    color: black !important;
+    background-color: white !important;
+}
+
+/* Alerta vermelho forte com texto branco */
+.alert-danger {
+    background-color: #b91c1c !important;
+    border-color: #7f1d1d !important;
+    color: #ffffff !important;
+}

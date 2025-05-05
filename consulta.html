@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Solicitação</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .honeypot {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="d-flex justify-content-end p-3">
+        <a href="index.html" class="btn btn-outline-secondary">Voltar</a>
+    </div>
+
+    <div class="container mt-2">
+        <div class="card shadow p-4">
+            <h4 class="mb-3">Consultar Solicitação</h4>
+            <form id="consultaForm">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="protocolo" name="protocolo" placeholder="Digite o protocolo"
+                        required>
+                </div>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="cpf" name="cpf" placeholder="Digite o CPF" required>
+                </div>
+                <input type="text" class="honeypot" name="honeypot" id="honeypot">
+                <input type="hidden" name="submission_time" id="submission_time">
+                <button class="btn btn-primary" type="submit">Consultar</button>
+            </form>
+
+            <div id="resultado" style="display:none;">
+                <h5 class="mt-4">Resultado da Consulta</h5>
+                <table class="table table-bordered mt-3">
+                    <tbody>
+                        <tr>
+                            <th>Nome</th>
+                            <td id="res-nome"></td>
+                        </tr>
+                        <tr>
+                            <th>Protocolo</th>
+                            <td id="res-protocolo"></td>
+                        </tr>
+                        <tr>
+                            <th>Data de Envio</th>
+                            <td id="res-data"></td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td id="res-status"></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div id="reenviar-section" style="display:none;">
+                    <form id="reenviarForm" enctype="multipart/form-data">
+                        <input type="hidden" name="protocolo" id="reenviar_protocolo">
+                        <div class="mb-3">
+                            <label for="documentos" class="form-label">Reenviar Documento(s) Requerido(s):</label>
+                            <input type="file" class="form-control" name="documentos[]" id="documentos" multiple
+                                required>
+                        </div>
+                        <button type="submit" class="btn btn-success">Enviar Documentos</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("consultaForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const protocolo = document.getElementById("protocolo").value;
+            const cpf = document.getElementById("cpf").value;
+            document.getElementById('submission_time').value = Date.now(); // Add timestamp
+
+            fetch("consulta.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `protocolo=${encodeURIComponent(protocolo)}&cpf=${encodeURIComponent(cpf)}&honeypot=${document.getElementById('honeypot').value}&submission_time=${document.getElementById('submission_time').value}`
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById("resultado").style.display = "block";
+                        document.getElementById("res-nome").textContent = data.nome;
+                        document.getElementById("res-protocolo").textContent = data.protocolo;
+                        document.getElementById("res-data").textContent = data.data_envio;
+                        document.getElementById("res-status").textContent = data.status;
+
+                        if (data.status === "Pendente" && data.p !== "") {
+                            document.getElementById("reenviar_protocolo").value = data.protocolo;
+                            document.getElementById("reenviar-section").style.display = "block";
+                        } else {
+                            document.getElementById("reenviar-section").style.display = "none";
+                        }
+                    } else {
+                        alert(data.error || "Protocolo e CPF não encontrados ou não correspondem.");
+                    }
+                });
+        });
+
+        document.getElementById("reenviarForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const form = new FormData(document.getElementById("reenviarForm"));
+
+            fetch("consulta.php", {
+                method: "POST",
+                body: form
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Documento(s) reenviado(s) com sucesso!");
+                        location.reload();
+                    } else {
+                        alert("Erro ao enviar documentos: " + data.error);
+                    }
+                });
+        });
+    </script>
+</body>
+
+</html>

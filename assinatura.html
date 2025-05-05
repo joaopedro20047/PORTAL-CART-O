@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinatura Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #signature-card {
+            max-width: 600px;
+            margin: 50px auto;
+            /* Center the card */
+        }
+
+        #signature-pad {
+            border: 2px dashed #adb5bd;
+            /* Softer gray border */
+            height: 300px;
+            cursor: crosshair;
+            background-color: white;
+            touch-action: none;
+            width: 100%;
+            /* Ensure canvas fills the card */
+            box-sizing: border-box;
+            /* Include border in width calculation */
+        }
+
+        .button-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #clear {
+            background-color: #d32f2f;
+            /* A bit brighter red */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        #download {
+            background-color: #388e3c;
+            /* A bit brighter green */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #clear:hover,
+        #download:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            /* Slightly darker on hover */
+        }
+    </style>
+</head>
+
+<body class="bg-dark text-light">
+    <div class="container">
+        <div class="card shadow p-4 bg-secondary" id="signature-card">
+            <h4 class="mb-4 text-center">Faça sua Assinatura</h4>
+            <canvas id="signature-pad"></canvas>
+            <div class="button-container">
+                <button id="clear">Limpar</button>
+                <button id="download">Baixar como PNG</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('signature-pad');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // Resize canvas to fill its container
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function startDrawing(e) {
+            drawing = true;
+            const {
+                x,
+                y
+            } = getMousePosition(canvas, e);
+            lastX = x;
+            lastY = y;
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000';
+            const {
+                x,
+                y
+            } = getMousePosition(canvas, e);
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            lastX = x;
+            lastY = y;
+        }
+
+        function stopDrawing() {
+            drawing = false;
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function downloadSignature() {
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataURL;
+            link.download = 'assinatura.png';
+            link.click();
+        }
+
+        function getMousePosition(canvas, event) {
+            const rect = canvas.getBoundingClientRect();
+            let x, y;
+            if (event.type.startsWith('touch')) {
+                x = event.touches[0].clientX - rect.left;
+                y = event.touches[0].clientY - rect.top;
+            } else {
+                x = event.clientX - rect.left;
+                y = event.clientY - rect.top;
+            }
+            return {
+                x,
+                y
+            };
+        }
+
+        // Event listeners for mouse
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Event listeners for touch
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchcancel', stopDrawing);
+
+        // Button event listeners (CRITICAL - THESE WERE MISSING)
+        document.getElementById('clear').addEventListener('click', clearCanvas);
+        document.getElementById('download').addEventListener('click', downloadSignature);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

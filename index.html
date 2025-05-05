@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitação de Credencial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .spinner-border {
+            width: 4rem;
+            height: 4rem;
+            animation: spin 1.5s linear infinite;
+        }
+
+        .oculto { display: none; }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ✅ Botão de consulta no topo -->
+    <div class="d-flex justify-content-end p-3">
+        <a href="consulta.html" class="btn btn-outline-primary">Consultar Solicitação</a>
+    </div>
+
+    <div class="container mt-2" id="form-container">
+        <div class="card shadow p-4">
+            <h4 class="mb-4">Escolha a Credencial</h4>
+            <form id="step1">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="tipo_credencial" id="idoso" value="IDOSO" required>
+                    <label class="form-check-label" for="idoso">IDOSO</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="tipo_credencial" id="pcd" value="PCD" required>
+                    <label class="form-check-label" for="pcd">PESSOA COM DEFICIÊNCIA</label>
+                </div>
+                <button type="button" class="btn btn-primary mt-3" onclick="showForm()">Confirmar</button>
+            </form>
+
+            <form id="step2" class="mt-4" style="display:none;" action="processar.php" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="tipo_credencial" id="tipo_credencial_escondido">
+
+                <h4 class="mb-3">Identificação do Requerente</h4>
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome Completo:</label>
+                    <input type="text" class="form-control" id="nome" name="nome" required>
+                </div>
+                <div class="row">
+                    <div class="mb-3 col-md-3">
+                        <label for="data_nascimento" class="form-label">Data de Nascimento:</label>
+                        <input type="date" class="form-control" id="data_nascimento" name="data_nascimento" required>
+                    </div>
+                    <div class="mb-3 col-md-3">
+                        <label for="cpf" class="form-label">CPF:</label>
+                        <input type="text" class="form-control" id="cpf" name="cpf" required>
+                    </div>
+                    <div class="mb-3 col-md-3">
+                        <label for="email" class="form-label">Email:</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3 col-md-3">
+                        <label for="telefone" class="form-label">Telefone:</label>
+                        <input type="text" class="form-control" id="telefone" name="telefone" required>
+                    </div>
+                </div>
+
+                <h4 class="mt-4 mb-3">Documento de Identificação</h4>
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Documento:</label>
+                    <select class="form-select" name="tipo_doc" id="tipo_doc" required onchange="ajustarDocumento()">
+                        <option value="">Selecione</option>
+                        <option value="RG">RG</option>
+                        <option value="CNH">CNH</option>
+                        <option value="Passaporte">Passaporte</option>
+                    </select>
+                </div>
+
+                <div id="doc_rg_cnh" class="oculto">
+                    <label class="form-label">Frente</label>
+                    <input type="file" class="form-control mb-2" name="doc_frente">
+                    <label class="form-label">Verso</label>
+                    <input type="file" class="form-control" name="doc_verso">
+                </div>
+
+                <div id="doc_passaporte" class="oculto">
+                    <label class="form-label">Passaporte (único arquivo)</label>
+                    <input type="file" class="form-control" name="doc_passaporte">
+                </div>
+
+                <div class="mb-3 mt-3">
+                    <label class="form-label">Comprovante de Residência:</label>
+                    <input type="file" class="form-control" name="residencia">
+                </div>
+
+                <div class="mb-3" id="laudo_group" style="display: none;">
+                    <label for="laudo" class="form-label">Laudo Médico com CID:</label>
+                    <input type="file" class="form-control" id="laudo" name="laudo">
+                </div>
+
+                <div class="alert alert-danger mt-3" role="alert">
+                    Ao confirmar o cadastro, o usuário terá total responsabilidade pelas informações acima,
+                    conforme preceitua o artigo 299 do Código Penal que estabelece penalidade de reclusão
+                    de 1 a 5 anos e multa se o documento é público.
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="btn-enviar">Enviar</button>
+                <button type="reset" class="btn btn-danger">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function ajustarDocumento() {
+            const tipo = document.getElementById('tipo_doc').value;
+            document.getElementById('doc_rg_cnh').classList.add('oculto');
+            document.getElementById('doc_passaporte').classList.add('oculto');
+
+            if (tipo === 'RG' || tipo === 'CNH') {
+                document.getElementById('doc_rg_cnh').classList.remove('oculto');
+            } else if (tipo === 'Passaporte') {
+                document.getElementById('doc_passaporte').classList.remove('oculto');
+            }
+        }
+
+        function showForm() {
+            const tipo = document.querySelector('input[name="tipo_credencial"]:checked');
+            if (tipo) {
+                document.getElementById('tipo_credencial_escondido').value = tipo.value;
+                document.getElementById('step1').style.display = 'none';
+                document.getElementById('step2').style.display = 'block';
+
+                const laudoGroup = document.getElementById('laudo_group');
+                const laudoInput = document.getElementById('laudo');
+                const btnEnviar = document.getElementById('btn-enviar');
+
+                if (tipo.value === 'PCD') {
+                    laudoGroup.style.display = 'block';
+                    btnEnviar.disabled = true;
+
+                    laudoInput.addEventListener('change', () => {
+                        btnEnviar.disabled = !laudoInput.files.length;
+                    });
+                } else {
+                    laudoGroup.style.display = 'none';
+                    btnEnviar.disabled = false;
+                }
+            }
+        }
+
+        document.querySelector('#step2').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const tipoSelecionado = document.getElementById('tipo_credencial_escondido').value;
+
+            if (!tipoSelecionado) {
+                alert("Por favor, selecione o tipo de credencial (Idoso ou PCD) antes de prosseguir.");
+                return;
+            }
+
+            const formData = new FormData(form);
+
+            fetch('processar.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('form-container').innerHTML = `
+                        <div class="text-center p-5">
+                            <h2 class="text-success mb-4">✅ Solicitação enviada com sucesso!</h2>
+                            <p class="text-light">Seu protocolo é:</p>
+                            <div style="background: white; color: black; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 1.5rem; display: inline-block;">
+                                ${data.protocolo}
+                            </div>
+                            <div class="mt-4 text-success" style="font-size: 2rem;">✅</div>
+                            <p class="mt-2 text-light">Você pode acompanhar sua solicitação com esse número.</p>
+                        </div>
+                    `;
+                } else {
+                    alert('Erro: ' + (data.error || 'Erro desconhecido.'));
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro de conexão com o servidor.');
+            });
+        });
+    </script>
+</body>
+</html>

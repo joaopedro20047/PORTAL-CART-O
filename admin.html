@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    if (!localStorage.getItem('admin_logado')) {
+      window.location.href = 'login.html';
+    }
+  </script>
+  <style>
+    .doc-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .doc-preview img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+
+<body class="bg-dark text-light">
+  <div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <h3>Painel Administrativo</h3>
+      <a href="configuracoes.html" class="btn btn-outline-light">Configurações</a>
+    </div>
+
+    <ul class="nav nav-tabs mt-4" id="adminTabs">
+      <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#aprovadas">Solicitações Aprovadas</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#reprovadas">Solicitações Reprovadas</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#pendentes">Solicitações Pendentes</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#reenvio">Solicitações Aguardando Reenvio</a></li> <!-- Nova aba -->
+    </ul>
+
+    <div class="tab-content mt-3">
+      <div class="tab-pane fade show active" id="aprovadas">
+        <div id="lista-aprovadas"></div>
+      </div>
+      <div class="tab-pane fade" id="reprovadas">
+        <div id="lista-reprovadas"></div>
+      </div>
+      <div class="tab-pane fade" id="pendentes">
+        <div id="lista-pendentes"></div>
+      </div>
+      <div class="tab-pane fade" id="reenvio"> <!-- Conteúdo da nova aba -->
+        <div id="lista-reenvio"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="detalhesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content bg-dark text-light">
+        <div class="modal-header">
+          <h5 class="modal-title">Detalhes da Solicitação</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="modalConteudo"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let configuracoes = {};
+
+    async function carregarConfiguracoes() {
+      try {
+        const res = await fetch('config/config.json');
+        configuracoes = await res.json();
+      } catch (e) {
+        console.error('Erro carregando configurações:', e);
+      }
+    }
+
+    function carregarSolicitacoes() {
+      fetch('admin.php?listar=1')
+        .then(res => res.json())
+        .then(data => {
+          ['aprovadas', 'reprovadas', 'pendentes', 'reenvio'].forEach(status => {  // Adicionado reenvio
+            const container = document.getElementById(`lista-${status}`);
+            container.innerHTML = data[status]?.map(s => `
+              <div class="card mb-3 bg-secondary text-light p-3">
+                <strong>${s.nome}</strong> | Protocolo: ${s.protocolo}
+                <div class="mt-2">
+                  <button class="btn btn-info btn-sm" onclick="verDetalhes('${s.protocolo}')">Detalhes</button>
+                </div>
+              </div>
+            `).join('') || '<p>Nenhuma solicitação encontrada.</p>';
+          });
+        })
+        .catch(err => console.error('Erro ao carregar solicitações:', err));
+    }
+
+    async function verDetalhes(protocolo) {
+      await carregarConfiguracoes();
+      fetch(`admin.php?detalhes=${protocolo}`)
+        .then(res => res.json())
+        .then(data => {
+          console.log('Dados recebidos do backend:', data);
+          let html = `<p><strong>Nome:</strong> ${data.nome}</p>`;
+          html += `<p><strong>Status:</strong> ${data.status}</p>`;
+
+          if (data.documentos && Object.keys(data.documentos).length > 0) {
+            html += '<p><strong>Documentos:</strong></p><ul>';
+            for (const campo in data.documentos) {
+              html += `<li><strong>${campo}:</strong><br><img src="${data.documentos[campo]}" alt="${campo}" style="max-width:200px; max-height:200px;"></li>`;
+            }
+            html += '</ul>';
+          } else {
+            html += '<p><strong>Documentos:</strong> Nenhum documento disponível.</p>';
+          }
+
+          if (configuracoes.observacao_personalizada == 1) {
+            html += `
+              <div class="mb-3">
+                <label class="form-label">Observação</label>
+                <textarea id="obs" class="form-control" rows="3"></textarea>
+              </div>
+            `;
+          }
+
+          const documentosStr = encodeURIComponent(JSON.stringify(data.documentos || {}));
+          html += `
+            <button class="btn btn-success me-2" onclick="atualizarStatus('${protocolo}', 'Aprovado')">Aprovar</button>
+            <button class="btn btn-danger me-2" onclick="atualizarStatus('${protocolo}', 'Reprovado')">Reprovar</button>
+            <button class="btn btn-warning" onclick="mostrarDropdownReenvio('${protocolo}', '${documentosStr}')">Solicitar Reenvio</button>
+          `;
+
+          document.getElementById('modalConteudo').innerHTML = html;
+          new bootstrap.Modal(document.getElementById('detalhesModal')).show();
+        })
+        .catch(err => console.error('Erro ao carregar detalhes:', err));
+    }
+
+    function mostrarDropdownReenvio(protocolo, documentosJson) {
+      try {
+        const documentos = JSON.parse(decodeURIComponent(documentosJson));
+        console.log('Documentos recebidos para reenvio:', documentos);
+
+        if (!documentos || Object.keys(documentos).length === 0) {
+          alert('Nenhum documento disponível para reenvio.');
+          return;
+        }
+
+        let html = '<p>Selecione os documentos que devem ser reenviados:</p>';
+        html += '<div id="docsParaReenvio" class="form-check">';
+        for (const [campo, url] of Object.entries(documentos)) {
+          const idSeguro = campo.replace(/[^a-zA-Z0-9]/g, '_');
+          html += `<div class="form-check doc-preview">
+                    <input class="form-check-input" type="checkbox" value="${campo}" id="doc_${idSeguro}">
+                    <label class="form-check-label" for="doc_${idSeguro}">
+                      <img src="${url}" alt="${campo}"> ${campo}
+                    </label>
+                  </div>`;
+        }
+        html += '</div>';
+        html += `<button class="btn btn-primary mt-3" onclick="enviarReenvio('${protocolo}')">Confirmar</button>`;
+        document.getElementById('modalConteudo').innerHTML = html;
+      } catch (error) {
+        console.error('Erro em mostrarDropdownReenvio:', error);
+      }
+    }
+
+    function enviarReenvio(protocolo) {
+      try {
+        const checkboxes = document.querySelectorAll('#docsParaReenvio input[type="checkbox"]:checked');
+        const selecionados = Array.from(checkboxes).map(opt => opt.value);
+        if (selecionados.length === 0) {
+          alert('Por favor, selecione pelo menos um documento para reenvio.');
+          return;
+        }
+        fetch('admin.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: `acao=pendente&protocolo=${protocolo}&p=${encodeURIComponent(selecionados.join('/'))}`
+        }).then(() => {
+          alert('Reenvio solicitado com sucesso!');
+          location.reload();
+        })
+          .catch(err => console.error('Erro ao solicitar reenvio:', err));
+      } catch (error) {
+        console.error('Erro em enviarReenvio:', error);
+      }
+    }
+
+    function atualizarStatus(protocolo, status) {
+      const observacao = document.getElementById('obs') ? encodeURIComponent(document.getElementById('obs').value) : '';
+      fetch('admin.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `acao=status&protocolo=${protocolo}&status=${status}&obs=${observacao}`
+      }).then(() => location.reload())
+        .catch(err => console.error('Erro ao atualizar status:', err));
+    }
+
+    const atualizarAba = () => {
+      const hash = window.location.hash || '#aprovadas';
+      const tabLinks = document.querySelectorAll('.nav-link');
+      tabLinks.forEach(link => {
+        if (link.getAttribute('href') === hash) {
+          link.classList.add('active');
+          document.querySelector(hash).classList.add('show', 'active');
+        } else {
+          link.classList.remove('active');
+          document.querySelector(link.getAttribute('href')).classList.remove('show', 'active');
+        }
+      });
+    };
+
+    window.addEventListener('hashchange', atualizarAba);
+    window.onload = () => {
+      carregarSolicitacoes();
+      atualizarAba();
+    };
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
