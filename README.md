@@ -10,7 +10,7 @@
 
    * 5.1 Frontend
    * 5.2 Backend PHP
-   * 5.3 Banco de Dados MySQL
+   * 5.3 Banco de Dados PostgreSQL
    * 5.4 Servidor Node.js (API de Notificação)
 6. Painel Administrativo
 7. Funcionalidades Avançadas
@@ -39,14 +39,14 @@ O sistema permite que o cidadão envie uma solicitação online, selecione o tip
 
 * **Frontend**: HTML5, CSS3, Bootstrap, JavaScript puro.
 * **Backend**: PHP (processamento, armazenamento, autenticação).
-* **Banco de Dados**: MySQL (armazenamento de dados e documentos).
+* **Banco de Dados**: PostgreSQL (armazenamento de dados e documentos).
 * **Servidor de Notificações**: Node.js com Express + Nodemailer.
 
 Camadas:
 
 * Aplicação do usuário (index.html)
 * Backend PHP (processar.php, admin.php)
-* Banco de Dados MySQL
+* Banco de Dados PostgreSQL
 * Serviço de notificação (index.js)
 
 ---
@@ -76,7 +76,7 @@ Camadas:
 * `admin.php`: Consulta e atualiza solicitações por status.
 * `configuracoes.php`: Atualiza preferências e metadados administrativos.
 
-### 5.3 Banco de Dados MySQL
+### 5.3 Banco de Dados PostgreSQL
 
 * Tabelas:
 
@@ -127,7 +127,7 @@ O painel permite:
 ## 9. Requisitos do Sistema
 
 * PHP 7.4+
-* MySQL 5.7+
+* PostgreSQL 12+
 * Node.js 18+
 * Navegador moderno (Chrome, Firefox)
 * Servidor com suporte a HTTPS (em produção)
@@ -137,7 +137,7 @@ O painel permite:
 ## 10. Instalação e Deploy
 
 1. Clonar arquivos em servidor Apache + PHP
-2. Criar banco de dados e importar esquema
+2. Criar banco de dados PostgreSQL e importar esquema
 3. Atualizar credenciais em arquivos PHP e Node.js
 4. Executar `npm install && npm start` no diretório Node.js
 5. Acessar via navegador o `index.html` e `admin.html`
